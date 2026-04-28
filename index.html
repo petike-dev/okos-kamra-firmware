@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okos Kamra Aktiválás</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        h2 { color: #1a73e8; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        button:hover { background-color: #1557b0; }
+        .status { margin-top: 15px; font-size: 14px; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Okos Kamra</h2>
+    <p>Aktiváld az eszközödet az ESP32 kijelzőjén látható adatokkal!</p>
+    
+    <input type="text" id="devID" placeholder="Eszköz ID (pl. KAMRA-XXXXXX)">
+    <input type="text" id="tempPW" placeholder="Ideiglenes Jelszó (PW)">
+    <hr>
+    <input type="email" id="userEmail" placeholder="E-mail címed">
+    <input type="password" id="newPass" placeholder="Új jelszó a belépéshez">
+    
+    <button onclick="aktivalas()">AKTIVÁLÁS ÉS PÁROSÍTÁS</button>
+    <div id="statusMsg" class="status"></div>
+</div>
+
+<script>
+    // --- IDE MÁSOLD BE A SAJÁT FIREBASE CONFIG-ODAT! ---
+    // Ezt a Firebase Console -> Project Settings-nél találod
+    const firebaseConfig = {
+        apiKey: "AIzaSy...", 
+        databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "etel-polc-default",
+        // ... a többi sor is kell ide ...
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function aktivalas() {
+        const id = document.getElementById('devID').value;
+        const pw = document.getElementById('tempPW').value;
+        const email = document.getElementById('userEmail').value;
+        const pass = document.getElementById('newPass').value;
+        const msg = document.getElementById('statusMsg');
+
+        if(!id || !pw || !email || !pass) {
+            alert("Kérlek, tölts ki minden mezőt!");
+            return;
+        }
+
+        msg.innerText = "Ellenőrzés...";
+
+        // 1. Megnézzük, létezik-e az ideiglenes jelszó az adatbázisban
+        db.ref('regisztracio/' + id + '/temp_pw').once('value').then((snapshot) => {
+            if (snapshot.exists() && snapshot.val() === pw) {
+                // 2. Ha stimmel, elmentjük a felhasználót
+                db.ref('users/' + id + '/profil').set({
+                    email: email,
+                    password: pass,
+                    reg_date: new Date().toISOString(),
+                    status: "active"
+                });
+
+                // 3. Jelzünk az ESP32-nek (ezt várja a kódjában a loopban)
+                db.ref('regisztracio/' + id + '/siker').set(true);
+
+                msg.style.color = "green";
+                msg.innerText = "Sikeres aktiválás! Az ESP32 pillanatokon belül elindul.";
+            } else {
+                msg.style.color = "red";
+                msg.innerText = "Hiba: Hibás ID vagy Jelszó!";
+            }
+        }).catch(error => {
+            msg.innerText = "Hiba történt: " + error.message;
+        });
+    }
+</script>
+
+</body>
+</html>
