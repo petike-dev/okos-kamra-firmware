@@ -3,87 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okos Kamra Aktiválás</title>
+    <title>Okos Kamra - Teljes Kezelőfelület</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
-        h2 { color: #1a73e8; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { color: #1a73e8; text-align: center; }
+        .section { display: none; }
+        .active { display: block; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        button:hover { background-color: #1557b0; }
-        .status { margin-top: 15px; font-size: 14px; color: #555; }
+        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .qty { font-weight: bold; color: #1a73e8; background: #e8f0fe; padding: 5px 10px; border-radius: 5px; }
+        .admin-btn { background: #666; margin-top: 20px; font-size: 11px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>Okos Kamra</h2>
-    <p>Aktiváld az eszközödet az ESP32 kijelzőjén látható adatokkal!</p>
-    
-    <input type="text" id="devID" placeholder="Eszköz ID (pl. KAMRA-XXXXXX)">
-    <input type="text" id="tempPW" placeholder="Ideiglenes Jelszó (PW)">
-    <hr>
-    <input type="email" id="userEmail" placeholder="E-mail címed">
-    <input type="password" id="newPass" placeholder="Új jelszó a belépéshez">
-    
-    <button onclick="aktivalas()">AKTIVÁLÁS ÉS PÁROSÍTÁS</button>
-    <div id="statusMsg" class="status"></div>
+
+    <div id="setupSection" class="section active">
+        <p style="text-align:center;">Eszköz párosítása és új jelszó</p>
+        <input type="text" id="devID" placeholder="Eszköz ID (pl. KAMRA-1EFB3F)">
+        <input type="text" id="tempPW" placeholder="Ideiglenes PW (a kijelzőről)">
+        <hr>
+        <input type="email" id="userEmail" placeholder="E-mail címed">
+        <input type="password" id="newPass" placeholder="Új saját jelszó">
+        <button onclick="aktivalas()">AKTIVÁLÁS ÉS MENTÉS</button>
+    </div>
+
+    <div id="inventorySection" class="section">
+        <p>Üdvözöljük! Eszköz: <strong id="displayID"></strong></p>
+        <div id="itemList"></div>
+        <button onclick="location.reload()" style="background:#999;">Kijelentkezés</button>
+    </div>
+
+    <div id="adminSection" class="section">
+        <h3>Adminisztrátor</h3>
+        <div id="adminList"></div>
+        <button onclick="location.reload()">Vissza</button>
+    </div>
+
+    <button class="admin-btn" onclick="toggleAdmin()">ADMIN BELÉPÉS</button>
 </div>
 
 <script>
-    // --- IDE MÁSOLD BE A SAJÁT FIREBASE CONFIG-ODAT! ---
-    // Ezt a Firebase Console -> Project Settings-nél találod
     const firebaseConfig = {
-        apiKey: "AIzaSy...", 
-        databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app",
+        apiKey: "AIzaSyDOcRpZ3obqa21h4__ux57M4U9qyR8gULQ",
+        databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app/",
         projectId: "etel-polc-default",
-        // ... a többi sor is kell ide ...
+        storageBucket: "etel-polc-default.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef"
     };
-    
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // AKTIVÁLÁS ÚJ JELSZÓVAL
     function aktivalas() {
-        const id = document.getElementById('devID').value;
-        const pw = document.getElementById('tempPW').value;
-        const email = document.getElementById('userEmail').value;
-        const pass = document.getElementById('newPass').value;
-        const msg = document.getElementById('statusMsg');
+        const id = document.getElementById('devID').value.trim().toUpperCase();
+        const tpw = document.getElementById('tempPW').value.trim();
+        const email = document.getElementById('userEmail').value.trim();
+        const npw = document.getElementById('newPass').value.trim();
 
-        if(!id || !pw || !email || !pass) {
-            alert("Kérlek, tölts ki minden mezőt!");
-            return;
-        }
+        if(!id || !tpw || !email || !npw) { alert("Mindent tölts ki!"); return; }
 
-        msg.innerText = "Ellenőrzés...";
-
-        // 1. Megnézzük, létezik-e az ideiglenes jelszó az adatbázisban
-        db.ref('regisztracio/' + id + '/temp_pw').once('value').then((snapshot) => {
-            if (snapshot.exists() && snapshot.val() === pw) {
-                // 2. Ha stimmel, elmentjük a felhasználót
+        db.ref('regisztracio/' + id).once('value').then((snapshot) => {
+            const data = snapshot.val();
+            if (data && data.temp_pw == tpw) {
+                // Profil mentése az új jelszóval
                 db.ref('users/' + id + '/profil').set({
                     email: email,
-                    password: pass,
-                    reg_date: new Date().toISOString(),
+                    password: npw, // Ezzel tudsz majd később belépni
                     status: "active"
                 });
-
-                // 3. Jelzünk az ESP32-nek (ezt várja a kódjában a loopban)
+                
+                // Jelzés az ESP32-nek
                 db.ref('regisztracio/' + id + '/siker').set(true);
 
-                msg.style.color = "green";
-                msg.innerText = "Sikeres aktiválás! Az ESP32 pillanatokon belül elindul.";
+                showSection('inventorySection');
+                document.getElementById('displayID').innerText = id;
+                betoltRaktar(id);
             } else {
-                msg.style.color = "red";
-                msg.innerText = "Hiba: Hibás ID vagy Jelszó!";
+                alert("Hibás aktiváló adatok!");
             }
-        }).catch(error => {
-            msg.innerText = "Hiba történt: " + error.message;
         });
     }
-</script>
 
+    // RAKTÁR KEZELÉS (Csak egyszeri elnevezés)
+    function betoltRaktar(id) {
+        db.ref('users/' + id + '/raktar').on('value', (snapshot) => {
+            const items = snapshot.val();
+            const listDiv = document.getElementById('itemList');
+            listDiv.innerHTML = items ? "" : "<p>Szkennelj be valamit!</p>";
+            
+            for (let code in items) {
+                const hasName = items[code].nev;
+                listDiv.innerHTML += `
+                    <div class="item-row">
+                        <div style="flex:1">
+                            <small>${code}</small><br>
+                            <input type="text" id="in-${code}" value="${hasName || ''}" 
+                            ${hasName ? 'disabled style="border:none; background:none; font-weight:bold;"' : ''} 
+                            placeholder="Termék neve...">
+                        </div>
+                        <div class="qty">${items[code].mennyiseg} db</div>
+                        ${!hasName ? `<button style="width:auto; padding:5px 10px;" onclick="mentNev('${id}','${code}')">OK</button>` : '✓'}
+                    </div>`;
+            }
+        });
+    }
+
+    function mentNev(id, code) {
+        const val = document.getElementById('in-'+code).value.trim();
+        if(val) db.ref('users/'+id+'/raktar/'+code+'/nev').set(val);
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    // ADMIN FUNKCIÓK
+    function toggleAdmin() {
+        const p = prompt("Admin PW:");
+        if(p === "admin123") {
+            showSection('adminSection');
+            db.ref('users').on('value', (s) => {
+                const u = s.val();
+                const al = document.getElementById('adminList');
+                al.innerHTML = "";
+                for(let d in u) {
+                    al.innerHTML += `<div class="card" style="border:1px solid #ccc; padding:5px; margin:5px;">
+                        <strong>${d}</strong> (${u[d].profil ? u[d].profil.email : 'Nincs email'})
+                        <button onclick="db.ref('users/${d}').remove()" style="background:red; font-size:10px; width:auto;">Törlés</button>
+                    </div>`;
+                }
+            });
+        }
+    }
+</script>
 </body>
 </html>
