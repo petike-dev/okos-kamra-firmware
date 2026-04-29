@@ -3,24 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okos Kamra - Admin & User</title>
+    <title>Okos Kamra Vezérlő</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        h2 { color: #1a73e8; text-align: center; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .section { display: none; }
         .active { display: block; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .admin-btn { background-color: #5f6368; margin-top: 20px; font-size: 11px; opacity: 0.5; }
-        .admin-btn:hover { opacity: 1; }
-        .card { border: 1px solid #ddd; padding: 15px; border-radius: 10px; margin-bottom: 15px; background: #fff; }
-        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        .qty { font-weight: bold; color: #1a73e8; }
-        .pw-change-box { background: #f9f9f9; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 3px solid #1a73e8; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; }
+        .qty { background: #e8f0fe; padding: 5px 10px; border-radius: 5px; font-weight: bold; color: #1a73e8; }
+        .admin-btn { background: #5f6368; margin-top: 25px; font-size: 11px; opacity: 0.7; }
+        .card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -29,146 +25,106 @@
     <h2>Okos Kamra</h2>
 
     <div id="loginSection" class="section active">
-        <p style="text-align:center;">Belépés az eszközödbe</p>
-        <input type="text" id="devID" placeholder="Eszköz ID (pl. KAMRA-1EFB3F)">
-        <input type="password" id="loginPW" placeholder="Jelszó">
-        <button onclick="aktivalas()">BELÉPÉS</button>
-        
-        <hr style="margin-top:20px; border:0; border-top:1px solid #eee;">
-        <button class="admin-btn" onclick="toggleAdmin()">ADMINISZTRÁTORI BELÉPÉS</button>
+        <input type="text" id="devID" placeholder="Eszköz ID">
+        <input type="password" id="pass" placeholder="Jelszó (vagy ideiglenes PW)">
+        <hr>
+        <p style="font-size:12px; color:666;">Új eszköznél add meg ezeket is:</p>
+        <input type="email" id="email" placeholder="E-mail cím">
+        <input type="password" id="newPass" placeholder="Új saját jelszó">
+        <button onclick="handleLogin()">BELÉPÉS / AKTIVÁLÁS</button>
+        <button class="admin-btn" onclick="openAdmin()">ADMIN PANEL</button>
     </div>
 
     <div id="inventorySection" class="section">
         <p>Eszköz: <strong id="displayID"></strong></p>
         <div id="itemList"></div>
-        <button onclick="location.reload()" style="background:#999; margin-top:20px;">Kijelentkezés</button>
+        <button onclick="location.reload()" style="background:#999;">Kijelentkezés</button>
     </div>
 
     <div id="adminSection" class="section">
-        <h3>Admin Vezérlőpult</h3>
-        <div id="allDevicesList"></div>
-        <button onclick="location.reload()" style="background:#444;">Vissza a főoldalra</button>
+        <h3>Adminisztrátor</h3>
+        <div id="adminList"></div>
+        <button onclick="location.reload()">Vissza</button>
     </div>
 </div>
 
 <script>
-    // --- FIREBASE CONFIG (A sajátod!) ---
     const firebaseConfig = {
         apiKey: "AIzaSyDOcRpZ3obqa21h4__ux57M4U9qyR8gULQ",
         databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app/",
-        projectId: "etel-polc-default",
-        storageBucket: "etel-polc-default.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:abcdef"
+        projectId: "etel-polc-default"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // SZEKCIÓ VÁLTÓ
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    // BELÉPÉS / AKTIVÁLÁS
-    function aktivalas() {
+    function handleLogin() {
         const id = document.getElementById('devID').value.trim().toUpperCase();
-        const pw = document.getElementById('loginPW').value.trim();
+        const pw = document.getElementById('pass').value.trim();
+        const mail = document.getElementById('email').value.trim();
+        const npw = document.getElementById('newPass').value.trim();
 
-        db.ref('users/' + id + '/profil').once('value').then((snapshot) => {
-            const profil = snapshot.val();
-            if (profil && profil.password === pw) {
-                // SIKERES BELÉPÉS
-                loginSuccess(id);
+        db.ref('users/' + id + '/profil').once('value').then(s => {
+            const p = s.val();
+            if (p && p.password === pw) {
+                startUserSession(id);
             } else {
-                // Ha nincs profil, megnézzük az ideiglenes regisztrációt
-                db.ref('regisztracio/' + id).once('value').then((regSnap) => {
-                    const regData = regSnap.val();
-                    if (regData && regData.temp_pw == pw) {
-                        // Első aktiválás (alapértelmezett profil létrehozása)
-                        db.ref('users/' + id + '/profil').set({ password: pw, status: "active" });
+                db.ref('regisztracio/' + id).once('value').then(rs => {
+                    const r = rs.val();
+                    if (r && r.temp_pw == pw) {
+                        if(!mail || !npw) return alert("Adj meg e-mailt és új jelszót!");
+                        db.ref('users/' + id + '/profil').set({ email: mail, password: npw });
                         db.ref('regisztracio/' + id + '/siker').set(true);
-                        loginSuccess(id);
-                    } else {
-                        alert("Hibás ID vagy jelszó!");
-                    }
+                        startUserSession(id);
+                    } else { alert("Hibás adatok!"); }
                 });
             }
         });
     }
 
-    function loginSuccess(id) {
-        showSection('inventorySection');
+    function startUserSession(id) {
         document.getElementById('displayID').innerText = id;
-        betoltUserRaktar(id);
-    }
-
-    // USER RAKTÁR MEGJELENÍTÉSE
-    function betoltUserRaktar(id) {
-        db.ref('users/' + id + '/raktar').on('value', (snapshot) => {
-            const items = snapshot.val();
-            const listDiv = document.getElementById('itemList');
-            listDiv.innerHTML = items ? "" : "<p>Szkennelj be valamit!</p>";
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('inventorySection').classList.add('active');
+        
+        db.ref('users/' + id + '/raktar').on('value', s => {
+            const items = s.val();
+            const list = document.getElementById('itemList');
+            list.innerHTML = "";
             for (let code in items) {
-                const hasName = items[code].nev;
-                listDiv.innerHTML += `
+                const name = items[code].nev;
+                list.innerHTML += `
                     <div class="item-row">
                         <div style="flex:1"><small>${code}</small><br>
-                        <input type="text" id="in-${code}" value="${hasName || ''}" ${hasName ? 'disabled' : ''} placeholder="Név..."></div>
+                        <input type="text" id="n-${code}" value="${name || ''}" ${name ? 'disabled border="none"' : ''} placeholder="Név..."></div>
                         <div class="qty">${items[code].mennyiseg} db</div>
-                        ${!hasName ? `<button style="width:auto; padding:5px;" onclick="mentNev('${id}','${code}')">Mentés</button>` : '✓'}
+                        ${!name ? `<button style="width:auto; padding:5px;" onclick="saveName('${id}','${code}')">OK</button>` : '✓'}
                     </div>`;
             }
         });
     }
 
-    function mentNev(id, code) {
-        const val = document.getElementById('in-'+code).value.trim();
+    function saveName(id, code) {
+        const val = document.getElementById('n-'+code).value.trim();
         if(val) db.ref('users/'+id+'/raktar/'+code+'/nev').set(val);
     }
 
-    // --- ADMIN FUNKCIÓK ---
-    function toggleAdmin() {
-        const pass = prompt("Admin jelszó:");
-        if(pass === "admin123") {
-            showSection('adminSection');
-            betoltAdminPanel();
-        } else {
-            alert("Hozzáférés megtagadva!");
-        }
-    }
-
-    function betoltAdminPanel() {
-        db.ref('users').on('value', (snapshot) => {
-            const users = snapshot.val();
-            const adminList = document.getElementById('allDevicesList');
-            adminList.innerHTML = "";
-
-            for (let devId in users) {
-                const profil = users[devId].profil || {};
-                adminList.innerHTML += `
-                    <div class="card">
-                        <strong>Eszköz ID: ${devId}</strong><br>
-                        <span>E-mail: ${profil.email || 'Nincs megadva'}</span>
-                        
-                        <div class="pw-change-box">
-                            <small>Jelszó módosítása:</small>
-                            <input type="text" id="newpw-${devId}" placeholder="Új jelszó..." value="${profil.password || ''}">
-                            <button onclick="adminChangePW('${devId}')" style="background:#34a853; padding:5px; font-size:12px;">Jelszó Mentése</button>
-                        </div>
-                        
-                        <button onclick="db.ref('users/${devId}').remove()" style="background:#ea4335; margin-top:10px; font-size:10px; width:auto;">ESZKÖZ TÖRLÉSE</button>
+    function openAdmin() {
+        const p = prompt("Admin PW:");
+        if(p === "admin123") {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('adminSection').classList.add('active');
+            db.ref('users').on('value', s => {
+                const u = s.val();
+                const al = document.getElementById('adminList');
+                al.innerHTML = "";
+                for(let d in u) {
+                    al.innerHTML += `<div class="card">
+                        <strong>${d}</strong><br>
+                        Jelszó módosítása: <input type="text" id="apw-${d}" value="${u[d].profil.password}">
+                        <button onclick="db.ref('users/${d}/profil/password').set(document.getElementById('apw-${d}').value)">Mentés</button>
                     </div>`;
-            }
-        });
-    }
-
-    function adminChangePW(devId) {
-        const newPass = document.getElementById('newpw-' + devId).value.trim();
-        if(newPass) {
-            db.ref('users/' + devId + '/profil/password').set(newPass)
-            .then(() => alert("Jelszó sikeresen módosítva a(z) " + devId + " eszközhöz!"));
+                }
+            });
         }
     }
 </script>
