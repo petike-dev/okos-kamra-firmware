@@ -7,59 +7,159 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
-        .section { display: none; }
-        .active { display: block; }
-        h2 { color: #1a73e8; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
-        button:hover { background: #1557b0; }
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --card-bg: #ffffff;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            margin: 0;
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            color: #2b2d42;
+        }
+
+        .container { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 450px; 
+            margin: 20px;
+            text-align: center;
+        }
+
+        h2 { 
+            font-weight: 800; 
+            font-size: 32px;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section { display: none; opacity: 0; transform: translateY(10px); transition: 0.4s ease; }
+        .section.active { display: block; opacity: 1; transform: translateY(0); }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        label { font-size: 12px; font-weight: 700; color: #8d99ae; margin-left: 5px; text-transform: uppercase; }
+
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 8px 0; 
+            border: 2px solid #edf2f4; 
+            border-radius: 12px; 
+            box-sizing: border-box; 
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: var(--primary); background: #fff; }
+
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: 14px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 16px;
+            margin-top: 15px; 
+            transition: 0.3s;
+        }
+
+        button:hover { background: var(--secondary); transform: translateY(-2px); }
+
         .btn-green { background: #34a853; }
-        .btn-orange { background: #fbbc05; color: black; }
-        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 5px; border-radius: 8px; }
-        .qty { background: #e8f0fe; padding: 5px 12px; border-radius: 20px; font-weight: bold; color: #1a73e8; }
-        .shopping-list { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 14px; }
-        .admin-btn { background: #5f6368; margin-top: 25px; font-size: 11px; opacity: 0.6; }
+        .btn-orange { background: #fbbc05; color: #333; }
+
+        .item-row { 
+            display: flex; 
+            align-items: center; 
+            padding: 15px; 
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            border: 1px solid #f1f3f5;
+            text-align: left;
+        }
+
+        .qty-badge { 
+            background: #e7f5ff; 
+            padding: 6px 12px; 
+            border-radius: 10px; 
+            font-weight: 800; 
+            color: var(--primary);
+        }
+
+        .shopping-list { 
+            background: #fff9db; 
+            border-left: 5px solid #fab005; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .admin-link { color: #adb5bd; font-size: 12px; margin-top: 25px; cursor: pointer; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🍎 Okos Kamra</h2>
+    <h2>PantryOS</h2>
 
     <div id="loginSection" class="section active">
-        <p style="text-align:center; color:#666;">Add meg az eszközöd kódját!</p>
-        <input type="text" id="devID" placeholder="Pantry-740c86c">
-        <input type="password" id="pass" placeholder="Jelszó">
+        <div class="input-group">
+            <label>ESZKÖZ AZONOSÍTÓ</label>
+            <input type="text" id="devID" placeholder="Pantry-xxxxxxx">
+        </div>
+        <div class="input-group">
+            <label>JELSZÓ</label>
+            <input type="password" id="pass" placeholder="******">
+        </div>
         
-        <div id="activationFields" style="margin-top:20px; padding-top:10px; border-top:1px solid #eee;">
-            <p style="font-size:12px; color:#888;">Első belépésnél add meg ezeket is:</p>
-            <input type="email" id="email" placeholder="E-mail címed">
-            <input type="password" id="newPass" placeholder="Végleges jelszavad">
+        <div id="activationBox" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ced4da;">
+            <p style="font-size:11px; color:#adb5bd; font-weight:bold;">ÚJ ESZKÖZ AKTIVÁLÁSA:</p>
+            <input type="email" id="email" placeholder="Email címed">
+            <input type="password" id="newPass" placeholder="Választott saját jelszó">
         </div>
 
-        <button onclick="handleLogin()">BELÉPÉS / AKTIVÁLÁS</button>
-        <button class="admin-btn" onclick="openAdmin()">ADMIN PANEL</button>
+        <button onclick="handleLogin()">Belépés</button>
+        <span class="admin-link" onclick="openAdmin()">Rendszergazdai beállítások</span>
     </div>
 
     <div id="inventorySection" class="section">
-        <p>Eszköz ID: <strong id="displayID"></strong></p>
+        <p style="color:#8d99ae; font-size: 14px;">Eszköz: <b id="displayID" style="color:var(--primary)"></b></p>
         
-        <div style="display: flex; gap: 10px;">
-            <button class="btn-green" onclick="generateShoppingList()">🛒 Listám</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn-green" onclick="generateShoppingList()">🛒 Lista</button>
             <button class="btn-orange" onclick="getRecipe()">🍳 Recept</button>
         </div>
 
         <div id="shoppingListDisplay" class="shopping-list" style="display:none;"></div>
         
-        <div id="itemList" style="margin-top:20px;"></div>
+        <div id="itemList" style="margin-top:25px;"></div>
         
-        <button onclick="location.reload()" style="background:#ea4335; margin-top:30px;">Kijelentkezés</button>
+        <button onclick="location.reload()" style="background:none; color:#adb5bd; box-shadow:none; text-decoration:underline; font-size:13px;">Kijelentkezés</button>
     </div>
 
     <div id="adminSection" class="section">
-        <h3>Felhasználók kezelése</h3>
+        <h3>Felhasználók</h3>
         <div id="adminList"></div>
         <button onclick="location.reload()">Vissza</button>
     </div>
@@ -81,30 +181,33 @@
         const mail = document.getElementById('email').value.trim();
         const npw = document.getElementById('newPass').value.trim();
 
-        if(!id || !pw) return alert("Kérlek töltsd ki a mezőket!");
+        if(!id || !pw) return alert("Kérlek add meg az ID-t és a jelszót!");
 
-        console.log("Belépés megkísérelve:", id);
-
-        // 1. Megnézzük, aktivált-e már
+        // 1. Megnézzük, aktivált-e már (users ág)
         db.ref('users/' + id + '/profil').once('value').then(s => {
             const user = s.val();
             if (user && user.password === pw) {
+                // SIKERES BELÉPÉS SAJÁT JELSZÓVAL
                 startUserSession(id);
             } else {
-                // 2. Ha nem, nézzük a temp_accounts-ban (aktiváló kód)
+                // 2. Ha nem találja, nézzük a temp_accounts-ban (aktiváló kód)
                 db.ref('temp_accounts/' + id).once('value').then(rs => {
                     const temp = rs.val();
                     if (temp && String(temp.password) === String(pw)) {
-                        if(!mail || !npw) return alert("Az aktiváláshoz adj meg e-mailt és új jelszót!");
+                        // HA AZ IDEIGLENES JELSZÓ JÓ, DE NINCS EMAIL/ÚJ PW
+                        if(!mail || !npw) {
+                            return alert("Aktiváláshoz add meg az email címed és az új jelszavadat!");
+                        }
                         
-                        // Aktiválás
+                        // AKTIVÁLÁS: Átrakjuk a végleges helyre
                         db.ref('users/' + id + '/profil').set({ 
                             email: mail, 
                             password: npw,
                             activated: true 
                         }).then(() => {
+                            // Töröljük az ideiglenes hozzáférést
                             db.ref('temp_accounts/' + id).remove();
-                            alert("Sikeres aktiválás! Mostantól az új jelszavaddal léphetsz be.");
+                            alert("Sikeres aktiválás! Mostantól az új jelszavad él.");
                             startUserSession(id);
                         });
                     } else { 
@@ -120,28 +223,27 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('inventorySection').classList.add('active');
         
-        // Valós idejű frissítés a kamrához
+        // Kamra tartalmának figyelése
         db.ref('incoming_scans/' + id).on('value', s => {
             const items = s.val();
             const list = document.getElementById('itemList');
-            list.innerHTML = "<h4>Készleten:</h4>";
+            list.innerHTML = "";
             
-            if(!items) { list.innerHTML += "<p>Még nincs semmi a kamrádban.</p>"; return; }
+            if(!items) { list.innerHTML = "<p style='color:#adb5bd;'>A kamra üres...</p>"; return; }
 
             for (let code in items) {
-                const name = items[code].nev || "Ismeretlen termék";
+                const name = items[code].nev || "Ismeretlen";
                 const qty = items[code].mennyiseg || 1;
 
                 list.innerHTML += `
                     <div class="item-row">
                         <div style="flex:1">
-                            <small style="color:#999">${code}</small><br>
-                            <input type="text" id="n-${code}" value="${name === 'Ismeretlen termék' ? '' : name}" 
-                            ${name !== 'Ismeretlen termék' ? 'disabled' : ''} placeholder="Termék neve..." 
-                            style="width:80%; padding:5px; margin:0; border-bottom:1px solid #ddd;">
+                            <span style="font-size:10px; color:#adb5bd;">${code}</span><br>
+                            <input type="text" id="n-${code}" value="${name === 'Ismeretlen' ? '' : name}" 
+                            ${name !== 'Ismeretlen' ? 'disabled style="border:none; font-weight:bold; padding:0;"' : 'style="padding:5px; margin:0;"'} placeholder="Nevezd el...">
                         </div>
-                        <div class="qty">${qty} db</div>
-                        ${name === 'Ismeretlen termék' ? `<button style="width:auto; padding:5px; margin:0; margin-left:5px;" onclick="saveName('${id}','${code}')">Mentés</button>` : ''}
+                        <div class="qty-badge">${qty} db</div>
+                        ${name === 'Ismeretlen' ? `<button style="width:40px; padding:5px; margin:0 0 0 10px;" onclick="saveName('${id}','${code}')">OK</button>` : ''}
                     </div>`;
             }
         });
@@ -149,11 +251,7 @@
 
     function saveName(id, code) {
         const val = document.getElementById('n-'+code).value.trim();
-        if(val) {
-            db.ref('incoming_scans/'+id+'/'+code+'/nev').set(val);
-        } else {
-            alert("Írj be egy nevet!");
-        }
+        if(val) db.ref('incoming_scans/'+id+'/'+code+'/nev').set(val);
     }
 
     function generateShoppingList() {
@@ -162,52 +260,30 @@
             const items = s.val();
             let buyList = [];
             for(let code in items) {
-                // Ha nincs neve vagy csak 1 van belőle
                 if(!items[code].nev || items[code].mennyiseg < 2) {
                     buyList.push(items[code].nev || "Ismeretlen (" + code + ")");
                 }
             }
-            
             const display = document.getElementById('shoppingListDisplay');
-            if(buyList.length > 0) {
-                display.innerHTML = "<strong>Bevásárlólista:</strong><br>" + buyList.join(", ");
-                display.style.display = 'block';
-            } else {
-                display.innerHTML = "Mindenből van elég! 😊";
-                display.style.display = 'block';
-            }
+            display.innerHTML = buyList.length ? "<b>Venni kell:</b><br>" + buyList.join(", ") : "Mindenből van elég! 😊";
+            display.style.display = 'block';
         });
     }
 
     function getRecipe() {
-        const id = document.getElementById('displayID').innerText;
-        db.ref('incoming_scans/' + id).once('value', s => {
-            const items = s.val();
-            let names = [];
-            for(let code in items) { if(items[code].nev) names.push(items[code].nev); }
-            
-            if(names.length < 2) return alert("Legalább 2 elnevezett termék kell a recepthez!");
-            
-            alert("💡 AI Tipp a kamrád alapján:\n\nHasználd fel ezeket: " + names.join(", ") + ".\nKészíts egy gyors tésztát vagy ragut belőlük!");
-        });
+        alert("AI Séf: A kamrádban lévő alapanyagok alapján javaslok egy gyors tésztát vagy egy finom omlettet!");
     }
 
     function openAdmin() {
-        const p = prompt("Admin Jelszó:");
-        if(p === "admin") {
+        const p = prompt("Admin jelszó:");
+        if(p === "admin123") {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('adminSection').classList.add('active');
             db.ref('users').on('value', s => {
                 const u = s.val();
                 const al = document.getElementById('adminList');
                 al.innerHTML = "";
-                for(let d in u) {
-                    al.innerHTML += `<div style="background:#eee; padding:10px; margin-bottom:5px; border-radius:5px;">
-                        <strong>ID:</strong> ${d} <br>
-                        <strong>Email:</strong> ${u[d].profil.email} <br>
-                        <strong>Jelszó:</strong> ${u[d].profil.password}
-                    </div>`;
-                }
+                for(let d in u) al.innerHTML += `<div class="item-row"><b>${d}</b><br>${u[d].profil.email}</div>`;
             });
         }
     }
