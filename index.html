@@ -7,57 +7,66 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; }
         .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
         .section { display: none; }
         .active { display: block; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        h2 { color: #1a73e8; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: #1557b0; }
         .btn-green { background: #34a853; }
         .btn-orange { background: #fbbc05; color: black; }
-        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; }
-        .qty { background: #e8f0fe; padding: 5px 10px; border-radius: 5px; font-weight: bold; color: #1a73e8; }
-        .shopping-list { background: #fffde7; border: 1px dashed #fbc02d; padding: 15px; border-radius: 8px; margin: 15px 0; }
-        .admin-btn { background: #5f6368; margin-top: 25px; font-size: 11px; opacity: 0.7; }
-        .card { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 8px; }
+        .item-row { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; background: #fafafa; margin-bottom: 5px; border-radius: 8px; }
+        .qty { background: #e8f0fe; padding: 5px 12px; border-radius: 20px; font-weight: bold; color: #1a73e8; }
+        .shopping-list { background: #fffde7; border: 2px dashed #fbc02d; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 14px; }
+        .admin-btn { background: #5f6368; margin-top: 25px; font-size: 11px; opacity: 0.6; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Okos Kamra</h2>
+    <h2>🍎 Okos Kamra</h2>
 
     <div id="loginSection" class="section active">
-        <input type="text" id="devID" placeholder="Eszköz ID (pl: Pantry-740c86c)">
+        <p style="text-align:center; color:#666;">Add meg az eszközöd kódját!</p>
+        <input type="text" id="devID" placeholder="Pantry-740c86c">
         <input type="password" id="pass" placeholder="Jelszó">
-        <hr>
-        <p style="font-size:12px; color:#666;">Új eszköznél add meg ezeket is az aktiváláshoz:</p>
-        <input type="email" id="email" placeholder="E-mail címed">
-        <input type="password" id="newPass" placeholder="Új saját jelszó">
+        
+        <div id="activationFields" style="margin-top:20px; padding-top:10px; border-top:1px solid #eee;">
+            <p style="font-size:12px; color:#888;">Első belépésnél add meg ezeket is:</p>
+            <input type="email" id="email" placeholder="E-mail címed">
+            <input type="password" id="newPass" placeholder="Végleges jelszavad">
+        </div>
+
         <button onclick="handleLogin()">BELÉPÉS / AKTIVÁLÁS</button>
         <button class="admin-btn" onclick="openAdmin()">ADMIN PANEL</button>
     </div>
 
     <div id="inventorySection" class="section">
-        <p>Eszköz: <strong id="displayID"></strong></p>
+        <p>Eszköz ID: <strong id="displayID"></strong></p>
         
-        <button class="btn-green" onclick="generateShoppingList()">🛒 Bevásárlólista generálása</button>
-        <button class="btn-orange" onclick="getRecipe()">🍳 Mit főzzek ebből? (AI Recept)</button>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-green" onclick="generateShoppingList()">🛒 Listám</button>
+            <button class="btn-orange" onclick="getRecipe()">🍳 Recept</button>
+        </div>
 
         <div id="shoppingListDisplay" class="shopping-list" style="display:none;"></div>
         
-        <div id="itemList"></div>
-        <button onclick="location.reload()" style="background:#999;">Kijelentkezés</button>
+        <div id="itemList" style="margin-top:20px;"></div>
+        
+        <button onclick="location.reload()" style="background:#ea4335; margin-top:30px;">Kijelentkezés</button>
     </div>
 
     <div id="adminSection" class="section">
-        <h3>Adminisztrátor</h3>
+        <h3>Felhasználók kezelése</h3>
         <div id="adminList"></div>
         <button onclick="location.reload()">Vissza</button>
     </div>
 </div>
 
 <script>
+    // FIREBASE KONFIGURÁCIÓ
     const firebaseConfig = {
         apiKey: "AIzaSyDOcRpZ3obqa21h4__ux57M4U9qyR8gULQ",
         databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app/",
@@ -67,36 +76,39 @@
     const db = firebase.database();
 
     function handleLogin() {
-        const id = document.getElementById('devID').value.trim(); // Fontos: NE legyen toUpperCase, mert az ID-ben kisbetűk is vannak!
+        const id = document.getElementById('devID').value.trim(); 
         const pw = document.getElementById('pass').value.trim();
         const mail = document.getElementById('email').value.trim();
         const npw = document.getElementById('newPass').value.trim();
 
-        // 1. Megnézzük, hogy már aktivált felhasználó-e
+        if(!id || !pw) return alert("Kérlek töltsd ki a mezőket!");
+
+        console.log("Belépés megkísérelve:", id);
+
+        // 1. Megnézzük, aktivált-e már
         db.ref('users/' + id + '/profil').once('value').then(s => {
-            const p = s.val();
-            if (p && p.password === pw) {
+            const user = s.val();
+            if (user && user.password === pw) {
                 startUserSession(id);
             } else {
-                // 2. Ha nem, megnézzük az ideiglenes (ESP32 által küldött) fiókok között
+                // 2. Ha nem, nézzük a temp_accounts-ban (aktiváló kód)
                 db.ref('temp_accounts/' + id).once('value').then(rs => {
-                    const r = rs.val();
-                    if (r && String(r.password) === String(pw)) {
-                        if(!mail || !npw) return alert("Az aktiváláshoz adj meg e-mailt és egy új jelszót!");
+                    const temp = rs.val();
+                    if (temp && String(temp.password) === String(pw)) {
+                        if(!mail || !npw) return alert("Az aktiváláshoz adj meg e-mailt és új jelszót!");
                         
-                        // Aktiválás: átmásoljuk a végleges helyre
+                        // Aktiválás
                         db.ref('users/' + id + '/profil').set({ 
                             email: mail, 
                             password: npw,
                             activated: true 
+                        }).then(() => {
+                            db.ref('temp_accounts/' + id).remove();
+                            alert("Sikeres aktiválás! Mostantól az új jelszavaddal léphetsz be.");
+                            startUserSession(id);
                         });
-                        // Töröljük a temp listából
-                        db.ref('temp_accounts/' + id).remove();
-                        
-                        alert("Eszköz sikeresen aktiválva!");
-                        startUserSession(id);
                     } else { 
-                        alert("Hibás adatok! Ellenőrizd az ID-t és a jelszót!"); 
+                        alert("Hibás ID vagy jelszó!"); 
                     }
                 });
             }
@@ -108,13 +120,13 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('inventorySection').classList.add('active');
         
-        // Raktár figyelése
+        // Valós idejű frissítés a kamrához
         db.ref('incoming_scans/' + id).on('value', s => {
             const items = s.val();
             const list = document.getElementById('itemList');
-            list.innerHTML = "<h3>Kamra tartalma:</h3>";
+            list.innerHTML = "<h4>Készleten:</h4>";
             
-            if(!items) { list.innerHTML += "<p>A kamra üres. Szkennelj be valamit!</p>"; return; }
+            if(!items) { list.innerHTML += "<p>Még nincs semmi a kamrádban.</p>"; return; }
 
             for (let code in items) {
                 const name = items[code].nev || "Ismeretlen termék";
@@ -123,12 +135,13 @@
                 list.innerHTML += `
                     <div class="item-row">
                         <div style="flex:1">
-                            <small>${code}</small><br>
+                            <small style="color:#999">${code}</small><br>
                             <input type="text" id="n-${code}" value="${name === 'Ismeretlen termék' ? '' : name}" 
-                            ${name !== 'Ismeretlen termék' ? 'disabled' : ''} placeholder="Add meg a nevét...">
+                            ${name !== 'Ismeretlen termék' ? 'disabled' : ''} placeholder="Termék neve..." 
+                            style="width:80%; padding:5px; margin:0; border-bottom:1px solid #ddd;">
                         </div>
                         <div class="qty">${qty} db</div>
-                        ${name === 'Ismeretlen termék' ? `<button style="width:auto; padding:5px;" onclick="saveName('${id}','${code}')">OK</button>` : ''}
+                        ${name === 'Ismeretlen termék' ? `<button style="width:auto; padding:5px; margin:0; margin-left:5px;" onclick="saveName('${id}','${code}')">Mentés</button>` : ''}
                     </div>`;
             }
         });
@@ -136,48 +149,52 @@
 
     function saveName(id, code) {
         const val = document.getElementById('n-'+code).value.trim();
-        if(val) db.ref('incoming_scans/'+id+'/'+code+'/nev').set(val);
+        if(val) {
+            db.ref('incoming_scans/'+id+'/'+code+'/nev').set(val);
+        } else {
+            alert("Írj be egy nevet!");
+        }
     }
 
-    // BEVÁSÁRLÓLISTA GENERÁLÁSA (Ami nincs elnevezve, vagy kevés van belőle)
     function generateShoppingList() {
         const id = document.getElementById('displayID').innerText;
         db.ref('incoming_scans/' + id).once('value', s => {
             const items = s.val();
-            let listHtml = "<strong>Venni kell:</strong><ul>";
-            let found = false;
-
+            let buyList = [];
             for(let code in items) {
+                // Ha nincs neve vagy csak 1 van belőle
                 if(!items[code].nev || items[code].mennyiseg < 2) {
-                    listHtml += `<li>${items[code].nev || "Ismeretlen kód: " + code}</li>`;
-                    found = true;
+                    buyList.push(items[code].nev || "Ismeretlen (" + code + ")");
                 }
             }
-            listHtml += "</ul>";
             
             const display = document.getElementById('shoppingListDisplay');
-            display.innerHTML = found ? listHtml : "Mindenből van elég! 😊";
-            display.style.display = 'block';
+            if(buyList.length > 0) {
+                display.innerHTML = "<strong>Bevásárlólista:</strong><br>" + buyList.join(", ");
+                display.style.display = 'block';
+            } else {
+                display.innerHTML = "Mindenből van elég! 😊";
+                display.style.display = 'block';
+            }
         });
     }
 
-    // AI RECEPT (Szimulált AI kérés a kamra alapján)
     function getRecipe() {
         const id = document.getElementById('displayID').innerText;
         db.ref('incoming_scans/' + id).once('value', s => {
             const items = s.val();
-            let ingredients = [];
-            for(let code in items) { if(items[code].nev) ingredients.push(items[code].nev); }
+            let names = [];
+            for(let code in items) { if(items[code].nev) names.push(items[code].nev); }
             
-            if(ingredients.length < 2) return alert("Kevés a cucc a recepthez!");
+            if(names.length < 2) return alert("Legalább 2 elnevezett termék kell a recepthez!");
             
-            alert("AI Javaslat a kamrádból (" + ingredients.join(", ") + "):\n\nKészíts egy gyors egytálételt! Pirítsd meg a hozzávalókat, és fűszerezd kedvedre. A konyhapultról adj hozzá egy kis hagymát!");
+            alert("💡 AI Tipp a kamrád alapján:\n\nHasználd fel ezeket: " + names.join(", ") + ".\nKészíts egy gyors tésztát vagy ragut belőlük!");
         });
     }
 
     function openAdmin() {
-        const p = prompt("Admin PW:");
-        if(p === "admin123") {
+        const p = prompt("Admin Jelszó:");
+        if(p === "admin") {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('adminSection').classList.add('active');
             db.ref('users').on('value', s => {
@@ -185,10 +202,10 @@
                 const al = document.getElementById('adminList');
                 al.innerHTML = "";
                 for(let d in u) {
-                    al.innerHTML += `<div class="card">
-                        <strong>${d}</strong> (E-mail: ${u[d].profil.email})<br>
-                        Új jelszó: <input type="text" id="apw-${d}" value="${u[d].profil.password}">
-                        <button onclick="db.ref('users/${d}/profil/password').set(document.getElementById('apw-${d}').value)">Mentés</button>
+                    al.innerHTML += `<div style="background:#eee; padding:10px; margin-bottom:5px; border-radius:5px;">
+                        <strong>ID:</strong> ${d} <br>
+                        <strong>Email:</strong> ${u[d].profil.email} <br>
+                        <strong>Jelszó:</strong> ${u[d].profil.password}
                     </div>`;
                 }
             });
