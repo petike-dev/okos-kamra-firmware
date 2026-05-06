@@ -1,67 +1,42 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Okos Kamra Teszt</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-    <div style="max-width:300px; margin: 50px auto; font-family: sans-serif;">
-        <h3>Belépés Teszt</h3>
-        <input type="text" id="devID" placeholder="Pantry-740c86c" style="width:100%; margin-bottom:10px;">
-        <input type="password" id="pass" placeholder="248971" style="width:100%; margin-bottom:10px;">
-        <button onclick="handleLogin()" style="width:100%; padding:10px; background:blue; color:white;">BELÉPÉS</button>
-        <p id="status" style="color:red; font-size:12px;"></p>
-    </div>
+    <h2>Végső Teszt</h2>
+    <button onclick="teszt()">ADAT LEKÉRÉSE</button>
+    <p id="kiiras">Várakozás...</p>
 
-<script>
-    // PONTOS KONFIGURÁCIÓ
-    const firebaseConfig = {
-        apiKey: "AIzaSyDOcRpZ3obqa21h4__ux57M4U9qyR8gULQ",
-        databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app/",
-        projectId: "etel-polc" // Itt kivettem a -default-ot!
-    };
+    <script>
+        const config = {
+            apiKey: "AIzaSyDOcRpZ3obqa21h4__ux57M4U9qyR8gULQ",
+            databaseURL: "https://etel-polc-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "etel-polc"
+        };
+        firebase.initializeApp(config);
+        const db = firebase.database();
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
+        function teszt() {
+            console.log("Gomb megnyomva, keresem: Pantry-740c86c");
+            document.getElementById('kiiras').innerText = "Lekérés folyamatban...";
 
-    function handleLogin() {
-        const id = document.getElementById('devID').value.trim();
-        const pw = document.getElementById('pass').value.trim();
-        const status = document.getElementById('status');
-
-        console.log("Lekérés indítása: ", id);
-        status.innerText = "Kapcsolódás...";
-
-        // Közvetlen lekérés a temp_accounts-ból
-        db.ref('temp_accounts/' + id).once('value')
-        .then(snapshot => {
-            const data = snapshot.val();
-            console.log("Firebase válasz:", data);
-
-            if (data) {
-                if (String(data.password) === String(pw)) {
-                    alert("SIKER! Bejelentkezve.");
-                    status.style.color = "green";
-                    status.innerText = "Sikeres belépés!";
+            db.ref('temp_accounts/Pantry-740c86c').once('value')
+            .then(snapshot => {
+                const data = snapshot.val();
+                console.log("Adat megérkezett:", data);
+                if(data) {
+                    document.getElementById('kiiras').innerText = "SIKER! Jelszó az adatbázisban: " + data.password;
                 } else {
-                    alert("Rossz jelszó! Az adatbázisban ez van: " + data.password);
-                    status.innerText = "Hibás jelszó.";
+                    document.getElementById('kiiras').innerText = "Hiba: Az ID nem található a temp_accounts mappában!";
                 }
-            } else {
-                alert("Nincs ilyen ID az adatbázisban!");
-                status.innerText = "Nincs ilyen ID.";
-            }
-        })
-        .catch(error => {
-            console.error("Hiba történt:", error);
-            alert("Firebase hiba! (Lásd a konzolt)");
-            status.innerText = "Hiba: " + error.message;
-        });
-    }
-</script>
+            })
+            .catch(err => {
+                console.error("Hiba:", err);
+                document.getElementById('kiiras').innerText = "Firebase Hiba: " + err.message;
+            });
+        }
+    </script>
 </body>
 </html>
